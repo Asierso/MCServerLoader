@@ -8,7 +8,6 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 
 public class Settings {
-    private String uri;
     private ArrayList<Flag> flagList;
     private static Settings settings;
     public static synchronized Settings getInstance(String uri){
@@ -17,7 +16,6 @@ public class Settings {
         return settings;
     }
     private Settings(String uri){
-        this.uri = uri;
         this.flagList = new ArrayList<>();
         if(!Files.exists(Path.of(uri))){
             try {
@@ -26,10 +24,10 @@ public class Settings {
                 e.printStackTrace();
             }
         }
-        loadSettings();
+        loadSettings(uri);
     }
 
-    private void loadSettings() {
+    private void loadSettings(String uri) {
         try {
             FileReader reader = new FileReader(uri);
             Scanner sc = new Scanner(reader);
