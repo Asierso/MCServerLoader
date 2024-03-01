@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="MCServerLoader:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/MCServerLoader</output-path>
+    <root id="archive" name="MCServerLoader.jar">
+      <element id="module-output" name="MCServerLoader" />
+    </root>
+  </artifact>
+</component>
