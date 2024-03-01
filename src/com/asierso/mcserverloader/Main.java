@@ -1,6 +1,7 @@
 package com.asierso.mcserverloader;
 
 import com.asierso.mcserverloader.minecraft.MCManager;
+import com.asierso.mcserverloader.settings.Settings;
 import com.asierso.mcserverloader.threads.PromptThread;
 import com.asierso.mcserverloader.threads.ServerHandlerThread;
 
@@ -19,50 +20,25 @@ import java.net.Socket;
 
 public class Main {
     public static void main(String[] args) {
-        String javaArgs = "-Xmx1024M -Xms1024M"; // Default -Xmx1024M -Xms1024M
-        int logPointer = 33; // Vanilla = 33, Forge=60
+        Settings settings = Settings.getInstance("mcloader.conf");
+        String javaArgs = settings.isFlag("javaargs")? (String)settings.getFlag("javaargs").value : "-Xmx1024M -Xms1024M"; // Default -Xmx1024M -Xms1024M
+        int logPointer = settings.isFlag("log-pointer")? Integer.parseInt((String)settings.getFlag("log-pointer").value) : 33; // Vanilla = 33, Forge=60
+        int port = settings.isFlag("port")? Integer.parseInt((String)settings.getFlag("port").value) : 25565; // Default 25565
 
-        Scanner sc = new Scanner(System.in);
-        String scBuffer = "";
+        //Jar de inicio
+        String mcjar = settings.isFlag("mc-jar")? (String)settings.getFlag("mc-jar").value : "server.jar";
+
+        //Limites horarios
+        LocalTime startTime = settings.isFlag("start-time")? LocalTime.parse((String)settings.getFlag("start-time").value,DateTimeFormatter.ofPattern("HH:mm:ss")) : null;
+        LocalTime endTime = settings.isFlag("end-time")? LocalTime.parse((String)settings.getFlag("end-time").value,DateTimeFormatter.ofPattern("HH:mm:ss")) : null;
 
         System.out.println("Minecraft Server loader - by Asierso");
-
-        // Configuracion del puerto de mc
-        System.out.print("Puerto establecido en servidor (default 25565): "); // Default 25565
-        scBuffer = sc.nextLine();
-        int port = scBuffer.isBlank() ? 25565 : Integer.parseInt(scBuffer);
-
-        // Configuracion de server.jar
-        System.out.print("Jar de inicio (default server.jar): ");
-        scBuffer = sc.nextLine();
-        String path = scBuffer.isBlank() ? "server.jar" : scBuffer;
-
-        // Configuracion de limites horarios
-        System.out.print("Desea configurar limites horarios (Y/N)?: ");
-        LocalTime startTime = null;
-        LocalTime endTime = null;
-        if (sc.nextLine().toLowerCase().charAt(0) == 'y') {
-            System.out.print("Hora desde (hh:mm:ss): ");
-            startTime = LocalTime.parse(sc.nextLine(), DateTimeFormatter.ofPattern("HH:mm:ss"));
-            System.out.print("Hora hasta (hh:mm:ss): ");
-            endTime = LocalTime.parse(sc.nextLine(), DateTimeFormatter.ofPattern("HH:mm:ss"));
-        }
-
-        // Configuracion avanzada de JVM y logPointer
-        System.out.print("Desea configurar propiedades avanzadas (Y/N)?: ");
-        if (sc.nextLine().toLowerCase().charAt(0) == 'y') {
-            System.out.print("Parametros JVM (default -Xmx1024M -Xms1024M): ");
-            scBuffer = sc.nextLine();
-            javaArgs = scBuffer.isBlank() ? javaArgs : scBuffer;
-            System.out.print("Indice de logPointer (default 33): ");
-            scBuffer = sc.nextLine();
-            logPointer = scBuffer.isBlank() ? logPointer : Integer.parseInt(scBuffer);
-        }
 
         // Hilo de ejecucion de prompts para interaccion con el PID correspondiente al
         // servidor de mc
         PromptThread pThread = null;
         MCManager mcManager = null;
+        Scanner sc = new Scanner(System.in);
         // Runtime principal
         while (true) {
             if ((startTime == null && endTime == null)
@@ -74,9 +50,9 @@ public class Main {
 
                     // Ejecucion de server.jar
                     if (System.getProperty("os.name").toLowerCase().contains("windows"))
-                        builder.command("cmd", "/c", "java " + javaArgs + " -jar " + path);
+                        builder.command("cmd", "/c", "java " + javaArgs + " -jar " + mcjar);
                     else
-                        builder.command("/bin/bash", "-c", "java " + javaArgs + " -jar " + path + " nogui");
+                        builder.command("/bin/bash", "-c", "java " + javaArgs + " -jar " + mcjar + " nogui");
 
                     // Inicio proceso sv
                     mcManager = new MCManager(builder.start());
@@ -126,7 +102,7 @@ public class Main {
                 // Server tirado - Espera de 10s apra reapertura
                 System.out.println("Conexion caida. Esperando timeout de 10s");
                 try {
-                    Thread.sleep(10000);
+                    Thread.sleep(settings.isFlag("timeout")? Integer.parseInt((String)settings.getFlag("timeout").value) : 10000);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -161,7 +137,6 @@ public class Main {
 
         } catch (Exception e) {
             e.printStackTrace();
-
         }
 
         return ip;
